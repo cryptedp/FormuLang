@@ -28,6 +28,8 @@ object Word {
   case class Text(s: String) extends Word
   case class Number(v: Double) extends Word
   case class Type(s: String) extends Word
+  case object BLOCK_START extends Word
+  case object BLOCK_END extends Word
 }
 
 object Precompiler {
@@ -75,7 +77,7 @@ object Precompiler {
       rt <- tkns
       t <- rt match {
         case Token.SPECIAL(";") => List(Token.EOL)
-        case Token.SPECIAL(x) if !x.equals(")") && !x.equals("(") =>
+        case Token.SPECIAL(x) if !x.equals(")") && !x.equals("(") && !x.equals("{") && !x.equals("}") =>
           cache = cache.map(_ + x).orElse(Option(x))
           List()
         case token if cache.isDefined =>
@@ -104,6 +106,8 @@ object Precompiler {
         case Token.EOF                              => Word.EOL
         case Token.SPECIAL("(")                     => Word.LPar
         case Token.SPECIAL(")")                     => Word.RPar
+        case Token.SPECIAL("{")                     => Word.BLOCK_START
+        case Token.SPECIAL("}")                     => Word.BLOCK_END
         case Token.SPECIAL(opc)                     => buildOpWord(opc)
         case Token.NUMBER(x)                        => Word.Number(x)
         case Token.STRING(txt)                      => Word.Text(txt)

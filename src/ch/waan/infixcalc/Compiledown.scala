@@ -32,6 +32,7 @@ object Compiledown {
     case Tree.EVAL(s, Tree.PACK(list)) => compileTree(s) ::: list.flatMap(compileTree) ::: List(OP.LITERAL_NUMBER(list.size), OP.EVAL)
     case Tree.ASSIGN(s, v)             => compileTree(v) ::: compileTree(s) ::: List(OP.ASSIGN)
     case Tree.TYPEOF(t)                => compileTree(t) ::: List(OP.TYPEOF)
+    case Tree.BLOCK(list)              => list flatMap compileTree
     case lambda: Tree.LAMBDA           => compileLambda(lambda)
   }
 

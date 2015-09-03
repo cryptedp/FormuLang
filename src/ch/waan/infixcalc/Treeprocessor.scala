@@ -35,17 +35,26 @@ object Tree {
     // override def toString = value.toString + " TYPEOF"
   }
   case class LAMBDA(params: List[Symbol], code: Tree) extends Tree
+  case class BLOCK(parts: List[Tree]) extends Tree
 }
 
 object Treeprocessor {
 
   type Trav[+A] = TraversableOnce[A]
 
-  class ShuntingYard(var output: List[Tree] = List(), var stack: List[Word with WordPrecedence] = List()) {
-
+  class ShuntingYard(var output: List[Tree] = List(), var stack: List[Word with WordPrecedence] = List(Word.LPar)) {
+    private var blockStack = List[List[Tree]]()
     // adds an element to the output
     private def publish(w: Word) {
+      println(output, w)
       w match {
+        case Word.BLOCK_START =>
+          blockStack = output :: blockStack
+          output = List()
+        case Word.BLOCK_END =>
+          val block = Tree.BLOCK(output.reverse)
+          output = block :: blockStack.head
+          blockStack = blockStack.tail
         // constants
         case Word.Number(x)   => output = Tree.Number(x) :: output
         case Word.Text(t)     => output = Tree.Text(t) :: output
@@ -94,15 +103,18 @@ object Treeprocessor {
     }
 
     private def popAll {
-      while (!stack.isEmpty) {
-        if (stack.head == Word.LPar)
-          throw new IllegalStateException("unexpected parenthesis")
-        pop
-      }
+      popToLPar
+      push(Word.LPar)
     }
 
     def process(w: Word) {
       w match {
+        case Word.BLOCK_START =>
+          publish(w)
+          push(Word.LPar)
+        case Word.BLOCK_END =>
+          popToLPar
+          publish(w)
         case Word.Number(_)   => publish(w)
         case Word.Symbolic(_) => publish(w)
         case Word.Text(_)     => publish(w)
@@ -145,6 +157,7 @@ object Treeprocessor {
       val pars = flattenCommaOp(params).asInstanceOf[List[Tree.Symbol]]
       Tree.LAMBDA(pars, ripenTree(code))
 
+    case Tree.BLOCK(list)                                   => Tree.BLOCK(list map ripenTree)
     case Tree.Operation("=", Tree.Symbol(s), v)             => Tree.ASSIGN(Tree.Symbol(s), ripenTree(v))
     case Tree.Operation("FC", Tree.Symbol("typeof"), param) => Tree.TYPEOF(ripenTree(param))
     case Tree.Operation("FC", Tree.Symbol(s), params) =>
