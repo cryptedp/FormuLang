@@ -1,14 +1,14 @@
 package ch.waan.infixcalc
-
+/*
 class Context {
 
   private var tokenizer = new Tokenizer(List())
   private var tokenParser = new TokenParser(List())
 
-  private var tokenizeRules: List[String] = List()
+  private var tokenizeRules: List[PartialFunction[String, Boolean]] = List()
   private var wordProcessingRules: List[PartialFunction[String, Word]] = List()
 
-  def addTokenizeRule(rule: String) = {
+  def addTokenizeRule(rule: PartialFunction[String, Boolean]) = {
     tokenizeRules = rule :: tokenizeRules
     tokenizer = new Tokenizer(tokenizeRules)
   }
@@ -28,47 +28,61 @@ object Context {
   def defaultContext = {
     val context = new Context()
 
-    context addTokenizeRule "\\d+(\\.\\d+)?\\D" // (decimal number)
-    context addTokenizeRule "\\([^\\(]" // left parenthesis
-    context addTokenizeRule "\\([^\\)]" // right parenthesis
-    context addTokenizeRule ",[^,]" // comma
-    context addTokenizeRule "[\\+\\-\\*\\/\\^]." // operators
-    context addTokenizeRule "\\$?[a-z]+[^a-z]" // method and variable names
-    context addTokenizeRule "[A-Z]+[^A-Z]" // constant names
-    context addTokenizeRule "\\=\\=?[^\\=]" // assignment and equals operator
-    context addTokenizeRule "(\\<|\\>)\\=?[^\\=]" // comparators
-    context addTokenizeRule "\\!\\=." // not-equals
+    val numberRg = "^(\\d+(\\.\\d+)?)$".r
+    val symbolRg = "^([a-zA-Z][A-Za-z_0-9]*)$".r
+    val typeRg = "^(\\#[a-z][a-z_0-9]*)$".r
 
-    val digitRegex = "(\\d+(\\.\\d+)?)".r
-    val fieldRegex = "\\$([a-z]+|[A-Z]+)".r
-    val functionRegex = "[a-z]+".r
+    context addTokenizeRule {
+      // reassignment operators
+      case "+=" | "-=" | "*=" | "/=" | "%=" | "^=" => true
+      // comparisons
+      case "==" | ">=" | "<=" | "!=" | "<" | ">"   => true
+      // normal operators
+      case "+" | "-" | "*" | "/" | "%" | "^"       => true
+      // assignment and special operators
+      case "=" | "." | ":" | "," | "(" | ")"       => true
+      // symbols
+      case numberRg(_*) => true
+    }
 
     context addWordProcessingRule {
       // container types
-      case digitRegex(x, _*)    => ConstantWord(RealNumber(x.toDouble))
-      case fieldRegex(s, _*)    => ConstantWord(SymbolicReference(Symbol(s)))
-      case functionRegex(s, _*) => FunctionWord(s)
+      case numberRg(x, _*) => ConstantWord(x.toDouble)
+      case symbolRg(s, _*) => SymbolicWord(Symbol(s))
+      // terminator
+      case ";"             => EOLWord
+      // type-checking
+      case ":"             => OpWord(":", 8)
+      case "."             => OpWord(".", 8)
+      case "=>"            => OpWord("=>", 2)
       // parentheses & list assembly
-      case "("                  => LeftPAR
-      case ")"                  => RightPAR
-      case ","                  => OpWord(",", 0)
+      case "("             => LeftPAR
+      case ")"             => RightPAR
+      case ","             => OpWord(",", 1)
       // operations
-      case "+"                  => OpWord("+", 3)
-      case "-"                  => OpWord("-", 3)
-      case "*"                  => OpWord("*", 4)
-      case "/"                  => OpWord("/", 4)
-      case "^"                  => OpWord("^", 5, true)
+      case "+"             => OpWord("+", 4)
+      case "-"             => OpWord("-", 4)
+      case "*"             => OpWord("*", 5)
+      case "/"             => OpWord("/", 5)
+      case "%"             => OpWord("/", 5)
+      case "^"             => OpWord("^", 6, true)
       // comparisons
-      case "<"                  => OpWord("<", 2)
-      case ">"                  => OpWord(">", 2)
-      case ">="                 => OpWord(">=", 2)
-      case "<="                 => OpWord("<=", 2)
-      case "=="                 => OpWord("==", 2)
-      case "!="                 => OpWord("!=", 2)
+      case "<"             => OpWord("<", 3)
+      case ">"             => OpWord(">", 3)
+      case ">="            => OpWord(">=", 3)
+      case "<="            => OpWord("<=", 3)
+      case "=="            => OpWord("==", 3)
+      case "!="            => OpWord("!=", 3)
       // assignment
-      case "="                  => OpWord("=", 1)
+      case "="             => OpWord("=", 2, true)
+      case "+="            => OpWord("+=", 2, true)
+      case "-="            => OpWord("-=", 2, true)
+      case "*="            => OpWord("*=", 2, true)
+      case "/="            => OpWord("/=", 2, true)
+      case "%="            => OpWord("%=", 2, true)
+      case "^="            => OpWord("^=", 2, true)
     }
 
     context
   }
-}
+} */

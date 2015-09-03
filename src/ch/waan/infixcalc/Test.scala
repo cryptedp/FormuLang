@@ -1,15 +1,22 @@
 package ch.waan.infixcalc
 
+import java.io.StringReader
+
 object Test extends App {
 
-  val input = "deftype complex (#real, #real)"
+  val input = "writeX(#real) = x => 12 + x"
 
-  val context = Context.defaultContext
+  val r = new StringReader(input)
 
-  val tokenizer = context.getTokenizer
-  val wdrparser = context.getTokenParser
+  val precompile =
+    Precompiler.tokenize andThen
+      Precompiler.clumpTokens andThen
+      Precompiler.translateRaw andThen
+      Precompiler.inferFunCalls andThen
+      Treeprocessor.shuntToTree andThen
+      Treeprocessor.ripenTrees andThen
+      Compiledown.treeToPostfix
 
-  println {
-    tokenizer.tokenize(input).map(wdrparser.parseTokens)
-  }
+  println(precompile(r).toList)
+
 }
