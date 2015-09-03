@@ -36,24 +36,33 @@ object Compiledown {
   }
 
   private def insertStackManagement(code: List[OP]): List[OP] = {
-    var opened = List[String]()
+    var opened = mutable.HashMap[String, Int]()
     var reversed = List[OP]()
+    var i = 0
     for (op <- code) {
+      i += 1
       (op, reversed.headOption) match {
         case (OP.ASSIGN, Some(OP.LITERAL_SYMBOL(s))) if !opened.contains(s) =>
-          opened = s :: opened
+          opened(s) = i
+          i += 2
           reversed = OP.ASSIGN :: OP.PUSH :: OP.COPY :: reversed
         case (command, _) => reversed = command :: reversed
       }
     }
 
+    val reversedLength = reversed.size
+
     var closed = List[String]()
     var result = List[OP]()
+    var j = reversedLength
     while (!reversed.isEmpty) {
+      j -= 1
       reversed.headOption match {
         case Some(OP.GETVAL) =>
           reversed.tail.headOption match {
             case Some(OP.LITERAL_SYMBOL(s)) =>
+              if (opened.contains(s) && opened(s) > j)
+                throw new IllegalStateException("var used before declaration: " + s)
               closed = s :: closed
               result = OP.LITERAL_SYMBOL(s) :: OP.COPY :: OP.GETVAL :: OP.SWAP :: OP.POP :: result
               reversed = reversed.tail
@@ -67,10 +76,10 @@ object Compiledown {
       }
     }
 
-    if ((closed diff opened).size != 0)
-      throw new IllegalStateException("symbols never got opened, but were closed: " + (closed diff opened))
+    if ((closed diff opened.keys.toList).size != 0)
+      throw new IllegalStateException("symbols never got opened, but were closed: " + (closed diff opened.keys.toList))
 
-    val unclosed = opened diff closed
+    val unclosed = opened.keys.toList diff closed
 
     var temp = List[OP]()
 

@@ -4,7 +4,7 @@ import java.io.StringReader
 
 object Test extends App {
 
-  val input = "writeX(#real) = x => 12 + x"
+  val input = "writeX(#real) = x => y = y + 1"
 
   val r = new StringReader(input)
 
