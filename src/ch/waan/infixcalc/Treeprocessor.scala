@@ -4,36 +4,16 @@ import scala.annotation.tailrec
 
 sealed trait Tree
 object Tree {
-  case class Operation(op: String, left: Tree, right: Tree) extends Tree {
-    // override def toString = s"$left $right $op"
-  }
-  case class Number(value: Double) extends Tree {
-    //  override def toString = s"$value"
-  }
-  case class Type(typ: String) extends Tree {
-    //  override def toString = typ
-  }
-  case class Text(text: String) extends Tree {
-    //  override def toString = "\"" + text + "\""
-  }
-  case class Symbol(symbol: String) extends Tree {
-    //  override def toString = symbol
-  }
-  case class ASSIGN(target: Symbol, value: Tree) extends Tree {
-    // override def toString = s"$target $value ASSIGN"
-  }
-  case class GETVAL(target: Tree) extends Tree {
-    //override def toString = s"$target GETVAL"
-  }
-  case class PACK(values: List[Tree]) extends Tree {
-    // override def toString = values.map(_.toString).reduceOption(_ + " " + _).getOrElse("") + " " + values.size + " PACK"
-  }
-  case class EVAL(symbol: Symbol, parameters: Tree) extends Tree {
-    //override def toString = symbol.toString + " " + parameters.toString + " EVAL"
-  }
-  case class TYPEOF(value: Tree) extends Tree {
-    // override def toString = value.toString + " TYPEOF"
-  }
+  case class Operation(op: String, left: Tree, right: Tree) extends Tree
+  case class Number(value: Double) extends Tree
+  case class Type(typ: String) extends Tree
+  case class Text(text: String) extends Tree
+  case class Symbol(symbol: String) extends Tree
+  case class ASSIGN(target: Symbol, value: Tree) extends Tree
+  case class GETVAL(target: Tree) extends Tree
+  case class PACK(values: List[Tree]) extends Tree
+  case class EVAL(symbol: Symbol, parameters: Tree) extends Tree
+  case class TYPEOF(value: Tree) extends Tree
   case class LAMBDA(params: List[Symbol], code: Tree) extends Tree
   case class BLOCK(parts: List[Tree]) extends Tree
 }
@@ -46,7 +26,6 @@ object Treeprocessor {
     private var blockStack = List[List[Tree]]()
     // adds an element to the output
     private def publish(w: Word) {
-      println(output, w)
       w match {
         case Word.BLOCK_START =>
           blockStack = output :: blockStack
@@ -151,6 +130,13 @@ object Treeprocessor {
       val typs = flattenCommaOp(types).asInstanceOf[List[Tree.Type]]
       val signature = f + "'" + typs.map(_.typ).reduceOption(_ + _).getOrElse("")
       val pars = flattenCommaOp(params).asInstanceOf[List[Tree.Symbol]]
+      if (typs.size != pars.size)
+        throw new IllegalStateException("type annotations do not match parameter list size")
+      Tree.ASSIGN(Tree.Symbol(signature), Tree.LAMBDA(pars, ripenTree(code)))
+
+    case Tree.Operation("=", Tree.Symbol(f), Tree.Operation("=>", params, code)) =>
+      val pars = flattenCommaOp(params).asInstanceOf[List[Tree.Symbol]]
+      val signature = f + "'" + pars.map(_ => "#any").reduceOption(_ + _).getOrElse("")
       Tree.ASSIGN(Tree.Symbol(signature), Tree.LAMBDA(pars, ripenTree(code)))
 
     case Tree.Operation("=>", params, code) =>

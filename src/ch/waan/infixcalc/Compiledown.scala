@@ -101,5 +101,5 @@ object Compiledown {
   private def compileLambda(lambda: Tree.LAMBDA) =
     List(OP.LITERAL_CODE(insertStackManagement(lambda.params.reverse.flatMap(symbol => List(OP.LITERAL_SYMBOL(symbol.symbol), OP.ASSIGN)) ::: compileTree(lambda.code))))
 
-  val treeToPostfix: Trav[Tree] => Trav[List[OP]] = _ map compileTree
+  val treeToPostfix: Trav[Tree] => List[OP] = _.toList flatMap compileTree
 }

@@ -5,9 +5,9 @@ import java.io.StringReader
 object Test extends App {
 
   val input = """sum = (x, y) => {
-    z = 12
-    x
+    x + y
     }
+    z = sum(1, 2)
     """
 
   val r = new StringReader(input)
